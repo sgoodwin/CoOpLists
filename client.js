@@ -8,6 +8,9 @@ var sockjs = new SockJS('/list'),
       });
 
       $('#total').text('' + items.length + ' Items: $' + total);
+    },
+    addPart = function(part){
+      $('ul').append('<li>' + part.text+ '<span>$' + part.price + '</span></li>');
     };
 
 $(function(){
@@ -15,17 +18,23 @@ $(function(){
 });
 
 sockjs.onmessage = function(event){
-  var part = JSON.parse(event.data);
-  parts.push(part);
+  var partEvent = JSON.parse(event.data);
 
-  $('ul').append('<li>' + part.text+ '<span>$' + part.price + '</span></li>');
+  if(partEvent.type === 'add'){
+    parts.push(partEvent.part);
+    addPart(partEvent.part);
+  }
+  if(partEvent.type === 'list'){
+    parts = partEvent.parts;
+    parts.forEach(addPart);
+  }
 
   recalculate(parts);
 };
 
 $('form').submit(function(){
   var field = $('#partInput');
-  sockjs.send(field.val());
+  sockjs.send(JSON.stringify({text: field.val(), type: 'add' }));
 
   field.val('');
   field.focus();
